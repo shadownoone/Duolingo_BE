@@ -1,59 +1,59 @@
-const router = require('express').Router();
+const router = require("express").Router();
 
-const mangaRouter = require('./manga');
+const languageRouter = require("./language");
 
-const chapterRouter = require('./chapter');
+const lessonRouter = require("./lesson");
 
-const chapterImgRouter = require('./chapter_Images');
+const badgeRouter = require("./badge");
 
-const genreRouter = require('./genre');
+const exerciseTypeRouter = require("./exerciseType");
 
-const mangaGenreRouter = require('./manga_Genres');
+const userProgressRouter = require("./userProgress");
 
-const favoriteRouter = require('./favorites');
+const courseRouter = require("./course");
 
-const commentRouter = require('./comments');
+const userBadgeRouter = require("./userBadge");
 
-const historiesRouter = require('./histories');
+const exerciseRouter = require("./exercise");
 
-const ratingRouter = require('./ratings');
+const friendRouter = require("./friend");
 
-const authRouter = require('./auth');
+const authRouter = require("./auth");
 
-const registerRouter = require('./register');
+const registerRouter = require("./register");
 
-const userRouter = require('./user');
+const userRouter = require("./user");
 
-const paymentRouter = require('./payments');
+const paymentRouter = require("./payments");
 
-const registerController = require('~/controllers/RegisterController');
-const { authenticateUser } = require('~/middlewares/authMiddleware');
+const registerController = require("~/controllers/RegisterController");
+const { authenticateUser } = require("~/middlewares/authMiddleware");
 
-router.use('/payments', paymentRouter);
+router.use("/payments", paymentRouter);
 
-router.use('/mangas', mangaRouter);
+router.use("/languages", languageRouter);
 
-router.use('/chapters', chapterRouter);
+router.use("/lessons", lessonRouter);
 
-router.use('/chapterImg', chapterImgRouter);
+router.use("/badges", badgeRouter);
 
-router.use('/genres', genreRouter);
+router.use("/exerciseTypes", exerciseTypeRouter);
 
-router.use('/mangaGenre', mangaGenreRouter);
+router.use("/userProgress", userProgressRouter);
 
-router.use('/favorites', favoriteRouter);
+router.use("/courses", courseRouter);
 
-router.use('/comments', commentRouter);
+router.use("/userBadges", userBadgeRouter);
 
-router.use('/histories', historiesRouter);
+router.use("/exercises", exerciseRouter);
 
-router.use('/ratings', ratingRouter);
+router.use("/friends", friendRouter);
 
-router.use('/auth', authRouter);
+router.use("/auth", authRouter);
 
-router.use('/registers', registerRouter);
+router.use("/registers", registerRouter);
 
-router.use('/users', userRouter);
+router.use("/users", userRouter);
 
 // router.get('/analysis', registerController.analysis);
 
