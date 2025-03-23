@@ -1,4 +1,4 @@
-const badgeService = require("../services/BadgeService");
+const badgeService = require("../services/badgeService");
 const BaseController = require("./BaseController");
 
 class BadgeController extends BaseController {
