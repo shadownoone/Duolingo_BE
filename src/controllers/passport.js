@@ -1,85 +1,93 @@
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
-const LocalStrategy = require('passport-local').Strategy;
+const LocalStrategy = require("passport-local").Strategy;
 
 // const FacebookStrategy = require('passport-facebook').Strategy;
 
-const passport = require('passport');
-const jwtService = require('~/services/jwtService');
+const passport = require("passport");
+const jwtService = require("~/services/jwtService");
 
-const db = require('~/models');
-const authService = require('~/services/authService');
+const db = require("~/models");
+const authService = require("~/services/authService");
+
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    async (email, password, done) => {
+      const result = await authService.handleLogin({ email, password });
+
+      if (result.code === 0) {
+        // Đăng nhập thành công
+        return done(null, result.data); // 'data' là thông tin user
+      } else {
+        // Sai mật khẩu hoặc user không tồn tại
+        return done(null, false, { message: result.message });
+      }
+    }
+  )
+);
 
 //Google
-passport.use(
-    new GoogleStrategy(
-        {
-            clientID: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            callbackURL: '/api/v1/auth/google/callback',
-            scope: ['profile', 'email'],
-        },
-        async function (accessToken, refreshToken, profile, callback) {
-            try {
-                // Kiểm tra xem người dùng đã tồn tại chưa
-                const existingUser = await db.User.findOne({
-                    where: { email: profile.emails[0].value },
-                });
+// passport.use(
+//     new GoogleStrategy(
+//         {
+//             clientID: process.env.CLIENT_ID,
+//             clientSecret: process.env.CLIENT_SECRET,
+//             callbackURL: '/api/v1/auth/google/callback',
+//             scope: ['profile', 'email'],
+//         },
+//         async function (accessToken, refreshToken, profile, callback) {
+//             try {
+//                 // Kiểm tra xem người dùng đã tồn tại chưa
+//                 const existingUser = await db.User.findOne({
+//                     where: { email: profile.emails[0].value },
+//                 });
 
-                if (existingUser) {
-                    // Nếu người dùng đã tồn tại, tạo token cho người dùng hiện tại
-                    existingUser.accessToken = jwtService.generateToken({
-                        id: existingUser.id,
-                        email: existingUser.email,
-                    });
+//                 if (existingUser) {
+//                     // Nếu người dùng đã tồn tại, tạo token cho người dùng hiện tại
+//                     existingUser.accessToken = jwtService.generateToken({
+//                         id: existingUser.id,
+//                         email: existingUser.email,
+//                     });
 
-                    // Trả về người dùng hiện tại
-                    return callback(null, existingUser);
-                }
+//                     // Trả về người dùng hiện tại
+//                     return callback(null, existingUser);
+//                 }
 
-                // Nếu người dùng chưa tồn tại, tạo người dùng mới
-                const newUser = await db.User.create({
-                    username: profile.displayName,
-                    email: profile.emails[0].value,
-                    avatar: profile.photos[0].value,
-                });
+//                 // Nếu người dùng chưa tồn tại, tạo người dùng mới
+//                 const newUser = await db.User.create({
+//                     username: profile.displayName,
+//                     email: profile.emails[0].value,
+//                     avatar: profile.photos[0].value,
+//                 });
 
-                // Tạo token cho người dùng mới
-                newUser.accessToken = jwtService.generateToken({
-                    id: newUser.id,
-                    email: newUser.email,
-                });
+//                 // Tạo token cho người dùng mới
+//                 newUser.accessToken = jwtService.generateToken({
+//                     id: newUser.id,
+//                     email: newUser.email,
+//                 });
 
-                return callback(null, newUser);
-            } catch (error) {
-                console.error('Error authenticating with Google:', error);
-                return callback(error, null);
-            }
-        },
-    ),
-);
+//                 return callback(null, newUser);
+//             } catch (error) {
+//                 console.error('Error authenticating with Google:', error);
+//                 return callback(error, null);
+//             }
+//         },
+//     ),
+// );
 
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
+// passport.serializeUser((user, done) => {
+//     done(null, user);
+// });
 
-passport.deserializeUser((user, done) => {
-    done(null, user);
-});
+// passport.deserializeUser((user, done) => {
+//     done(null, user);
+// });
 
 //Local
-
-passport.use(
-    new LocalStrategy(async function (email, password, done) {
-        const res = await authService.handleLogin({ email: email, password: password });
-
-        // if (!res) {
-        //     return done(null, false);
-        // }
-
-        return done(null, res);
-    }),
-);
 
 // Facebook
 // passport.use(
