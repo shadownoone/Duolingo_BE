@@ -106,7 +106,7 @@ app.use((req, res, next) => {
 
 routes(app);
 
-const YOUR_DOMAIN = "http://localhost:3000";
+const YOUR_DOMAIN = "http://localhost:5173";
 app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
   try {
     console.log("🚀 ~ req.user:", req.user); // Kiểm tra log user
@@ -175,11 +175,9 @@ app.post("/receive-hook", async (req, res) => {
 
     console.log(`User ${user.username} is now VIP until ${vipExpiration}`);
 
-    return res
-      .status(200)
-      .json({
-        message: "Payment recorded and user VIP status updated successfully",
-      });
+    return res.status(200).json({
+      message: "Payment recorded and user VIP status updated successfully",
+    });
   } catch (error) {
     console.error("Error handling webhook:", error);
 
