@@ -30,64 +30,73 @@ passport.use(
   )
 );
 
-//Google
-// passport.use(
-//     new GoogleStrategy(
-//         {
-//             clientID: process.env.CLIENT_ID,
-//             clientSecret: process.env.CLIENT_SECRET,
-//             callbackURL: '/api/v1/auth/google/callback',
-//             scope: ['profile', 'email'],
-//         },
-//         async function (accessToken, refreshToken, profile, callback) {
-//             try {
-//                 // Kiểm tra xem người dùng đã tồn tại chưa
-//                 const existingUser = await db.User.findOne({
-//                     where: { email: profile.emails[0].value },
-//                 });
+function generateRandomPassword(length = 10) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
-//                 if (existingUser) {
-//                     // Nếu người dùng đã tồn tại, tạo token cho người dùng hiện tại
-//                     existingUser.accessToken = jwtService.generateToken({
-//                         id: existingUser.id,
-//                         email: existingUser.email,
-//                     });
+// Google
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "/api/v1/auth/google/callback",
+      scope: ["profile", "email"],
+    },
+    async function (accessToken, refreshToken, profile, callback) {
+      try {
+        // Kiểm tra xem người dùng đã tồn tại chưa
+        const existingUser = await db.User.findOne({
+          where: { email: profile.emails[0].value },
+        });
 
-//                     // Trả về người dùng hiện tại
-//                     return callback(null, existingUser);
-//                 }
+        if (existingUser) {
+          // Nếu người dùng đã tồn tại, tạo token cho người dùng hiện tại
+          existingUser.accessToken = jwtService.generateToken({
+            id: existingUser.id,
+            email: existingUser.email,
+          });
 
-//                 // Nếu người dùng chưa tồn tại, tạo người dùng mới
-//                 const newUser = await db.User.create({
-//                     username: profile.displayName,
-//                     email: profile.emails[0].value,
-//                     avatar: profile.photos[0].value,
-//                 });
+          // Trả về người dùng hiện tại
+          return callback(null, existingUser);
+        }
 
-//                 // Tạo token cho người dùng mới
-//                 newUser.accessToken = jwtService.generateToken({
-//                     id: newUser.id,
-//                     email: newUser.email,
-//                 });
+        // Nếu người dùng chưa tồn tại, tạo người dùng mới
+        const newUser = await db.User.create({
+          username: profile.displayName,
+          email: profile.emails[0].value,
+          avatar: profile.photos[0].value,
+          password: generateRandomPassword(),
+        });
 
-//                 return callback(null, newUser);
-//             } catch (error) {
-//                 console.error('Error authenticating with Google:', error);
-//                 return callback(error, null);
-//             }
-//         },
-//     ),
-// );
+        // Tạo token cho người dùng mới
+        newUser.accessToken = jwtService.generateToken({
+          id: newUser.id,
+          email: newUser.email,
+        });
 
-// passport.serializeUser((user, done) => {
-//     done(null, user);
-// });
+        return callback(null, newUser);
+      } catch (error) {
+        console.error("Error authenticating with Google:", error);
+        return callback(error, null);
+      }
+    }
+  )
+);
 
-// passport.deserializeUser((user, done) => {
-//     done(null, user);
-// });
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
 
-//Local
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
 
 // Facebook
 // passport.use(
