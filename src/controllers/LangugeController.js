@@ -10,6 +10,34 @@ class LanguageController extends BaseController {
     super("language");
   }
 
+  getCoursesByLanguage = async (req, res) => {
+    try {
+      const { languageId } = req.params;
+      const language = await db.Language.findOne({
+        where: { language_id: languageId },
+        include: [
+          {
+            model: db.Course,
+            as: "courses", // Phải khớp với alias đã định nghĩa trong association
+          },
+        ],
+      });
+      if (!language) {
+        return res
+          .status(404)
+          .json({ code: -1, message: "Language not found" });
+      }
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: language,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   //POST Manga
   // POST Manga
   create = async (req, res) => {

@@ -2,9 +2,11 @@ const router = require("express").Router();
 
 const languageController = require("~/controllers/LangugeController");
 
-router.post("/create", languageController.create);
-
 router.get("/all", languageController.get);
+
+router.get("/:languageId", languageController.getCoursesByLanguage);
+
+router.post("/create", languageController.create);
 
 router.get("/search", languageController.searchManga);
 

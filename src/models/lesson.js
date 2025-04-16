@@ -6,6 +6,10 @@ module.exports = (sequelize, DataTypes) => {
     // Định nghĩa các associations (quan hệ) nếu cần
     static associate(models) {
       Lesson.belongsTo(models.Course, { foreignKey: "course_id" });
+      Lesson.hasMany(models.Exercise, {
+        foreignKey: "lesson_id",
+        as: "exercises",
+      });
     }
   }
 

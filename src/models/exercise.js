@@ -8,6 +8,11 @@ module.exports = (sequelize, DataTypes) => {
       Exercise.belongsTo(models.Lesson, { foreignKey: "lesson_id" });
       Exercise.belongsTo(models.ExerciseType, {
         foreignKey: "exercise_type_id",
+        as: "exerciseType",
+      });
+      Exercise.hasMany(models.ExerciseOption, {
+        foreignKey: "exercise_id",
+        as: "options",
       });
     }
   }
