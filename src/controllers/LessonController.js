@@ -29,6 +29,53 @@ class LessonController extends BaseController {
     }
   };
 
+  getLessonDetail = async (req, res) => {
+    try {
+      const { lessonId } = req.params;
+
+      const lesson = await db.Lesson.findOne({
+        where: { lesson_id: lessonId },
+
+        include: [
+          {
+            model: db.Course,
+
+            attributes: ["language_id"],
+          },
+          {
+            model: db.Exercise,
+            as: "exercises",
+            include: [
+              {
+                model: db.ExerciseType,
+                as: "exerciseType",
+              },
+              {
+                model: db.ExerciseOption,
+                as: "options",
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!lesson) {
+        return res
+          .status(404)
+          .json({ code: -1, message: "Bài học không tồn tại" });
+      }
+
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: lesson,
+      });
+    } catch (error) {
+      console.error("getLessonDetail error:", error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   // Method for creating a new chapter
   create = async (req, res) => {
     const { manga_id, chapter_number, title, images } = req.body; // 'images' là một mảng URL hình ảnh của chapter
@@ -72,31 +119,6 @@ class LessonController extends BaseController {
         .status(500)
         .json({ message: "Internal server error", error: error.message });
     }
-  };
-
-  // [GET] /Chapter/:slug
-  getChapterBySlug = async (req, res) => {
-    const slug = req.params.slug;
-
-    const data = await lessonService.find({
-      findOne: true,
-      where: {
-        slug: slug,
-      },
-      include: [
-        {
-          model: db.Chapter_Images,
-          as: "images", // Đảm bảo "images" là tên alias bạn đã định nghĩa trong model Chapter
-          attributes: ["image_url", "image_order"], // Lấy đúng thuộc tính
-        },
-      ],
-      raw: false,
-    });
-
-    if (data.code === -1) {
-      return res.status(500).json(data);
-    }
-    return res.status(200).json(data);
   };
 }
 

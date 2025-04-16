@@ -8,6 +8,31 @@ class CourseController extends BaseController {
     super("course");
   }
 
+  //get lesson by course
+  getLessonByCourse = async (req, res) => {
+    try {
+      const { courseId } = req.params; // Lấy courseId từ params
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 10;
+
+      const lessons = await db.Lesson.findAll({
+        where: { course_id: courseId },
+        order: [["lesson_order", "ASC"]],
+        offset: (page - 1) * pageSize,
+        limit: pageSize,
+      });
+
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: lessons,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   // GET API
   get = async (req, res) => {
     const page = req.query.page || 1;

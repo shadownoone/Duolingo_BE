@@ -6,6 +6,8 @@ const { authenticateUser } = require("~/middlewares/authMiddleware");
 // [GET] /Favorites
 router.get("/", courseController.get);
 
+router.get("/:courseId", courseController.getLessonByCourse);
+
 // [POST] /Favorites
 // router.post("/", courseController.create);
 

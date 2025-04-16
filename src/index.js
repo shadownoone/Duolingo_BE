@@ -190,5 +190,5 @@ app.post("/receive-hook", async (req, res) => {
 io.on("connection", socketService.connection);
 
 server.listen(port, () => {
-  console.log(`Backend MangaTS listening on http://localhost:${port}`);
+  console.log(`Backend Duolingo listening on http://localhost:${port}`);
 });

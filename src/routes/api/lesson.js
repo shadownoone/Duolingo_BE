@@ -5,6 +5,8 @@ const LessonController = require("~/controllers/LessonController");
 // [GET] /Chapter
 router.get("/", LessonController.get);
 
+router.get("/:lessonId", LessonController.getLessonDetail);
+
 // [POST] /Chapter
 router.post("/", LessonController.create);
 
@@ -13,8 +15,5 @@ router.put("/:id", LessonController.update);
 
 // [DELETE] /Chapter/:id
 router.delete("/:id", LessonController.delete);
-
-//GET /Chapter/:id
-router.get("/:slug", LessonController.getChapterBySlug);
 
 module.exports = router;
