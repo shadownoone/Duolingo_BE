@@ -2,11 +2,17 @@ const router = require("express").Router();
 
 const UserProgressController = require("~/controllers/UserProgressController");
 
+const { authenticateUser } = require("~/middlewares/authMiddleware");
+
 // [GET] /Manga
 router.get("/all", UserProgressController.get);
 
-// [GET] /Manga
-router.get("/:genreName", UserProgressController.getMangaByGenre);
+// POST hoàn thành lesson:   /api/userProgress/complete
+router.post(
+  "/complete",
+  authenticateUser,
+  UserProgressController.completeLesson
+);
 
 // [POST] /Manga
 router.post("/", UserProgressController.create);

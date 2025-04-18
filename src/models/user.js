@@ -3,9 +3,13 @@ const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
-    // Định nghĩa các method tĩnh hoặc quan hệ (associations) nếu cần
     static associate(models) {
-      // ví dụ: this.hasMany(models.Post, { foreignKey: 'userId' });
+      User.belongsToMany(models.Language, {
+        through: models.UserLanguage,
+        foreignKey: "user_id",
+        otherKey: "language_id",
+        as: "languages",
+      });
     }
   }
 
