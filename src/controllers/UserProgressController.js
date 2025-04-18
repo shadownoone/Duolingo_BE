@@ -30,56 +30,53 @@ class UserProgressController extends BaseController {
     }
   };
 
-  // API lấy truyện theo tên thể loại
-  getMangaByGenre = async (req, res) => {
-    const genreName = req.params.genreName;
+  completeLesson = async (req, res) => {
+    const userId = req.user.user_id;
+    const { lesson_id } = req.body;
+
+    if (!lesson_id) {
+      return res.status(400).json({
+        code: -1,
+        message: "lesson_id is required",
+      });
+    }
+
     try {
-      // Tìm thể loại dựa trên tên
-      const genre = await db.Genre.findOne({
-        where: { name: genreName },
+      // Tìm hoặc tạo record
+      const [progress, created] = await db.UserProgress.findOrCreate({
+        where: { user_id: userId, lesson_id },
+        defaults: {
+          user_id: userId,
+          lesson_id,
+          status: "completed",
+          score: 10,
+          xp: 10,
+          started_at: new Date(),
+          completed_at: new Date(),
+        },
       });
 
-      if (!genre) {
-        return res.status(404).json({ message: "Thể loại không tồn tại" });
+      // Nếu đã có rồi, chỉ cần update status + completed_at
+      if (!created) {
+        progress.status = "completed";
+        const currentScore = parseFloat(progress.score) || 0;
+        const currentXp = parseFloat(progress.xp) || 0;
+        progress.score = currentScore + 5;
+        progress.xp = currentXp + 5;
+        progress.completed_at = new Date();
+        await progress.save();
       }
 
-      // Tìm truyện thuộc thể loại này
-      const mangas = await db.Manga.findAll({
-        include: [
-          {
-            model: db.Genre,
-            as: "genres", // Đảm bảo alias chính xác
-            where: { genre_id: genre.genre_id },
-            through: { attributes: [] }, // Bỏ qua các thuộc tính từ bảng liên kết
-          },
-          {
-            model: db.Chapter,
-            as: "chapters",
-            attributes: ["chapter_id", "title", "createdAt"], // Lấy các thuộc tính cần thiết của chương
-            order: [["createdAt", "DESC"]], // Sắp xếp theo ngày tạo để lấy chương mới nhất
-            limit: 1, // Chỉ lấy chương cuối cùng
-          },
-        ],
-        attributes: [
-          "manga_id",
-          "title",
-          "description",
-          "author",
-          "views",
-          "cover_image",
-        ],
-      });
-
-      // Trả về danh sách truyện thuộc thể loại
       return res.status(200).json({
-        success: true,
-        data: mangas,
+        code: 0,
+        message: "Lưu tiến độ thành công",
+        data: progress,
       });
     } catch (error) {
+      console.error("completeLesson error:", error);
       return res.status(500).json({
-        success: false,
-        message: "Lỗi khi lấy truyện theo thể loại",
-        error: error.message,
+        code: -1,
+        message: error.message,
       });
     }
   };

@@ -7,6 +7,70 @@ class UserController extends BaseController {
     super("user");
   }
 
+  addLanguage = async (req, res) => {
+    const userId = req.user.user_id;
+    const { language_id } = req.body;
+
+    if (!language_id) {
+      return res.status(400).json({
+        code: -1,
+        message: "language_id is required",
+      });
+    }
+
+    try {
+      const exists = await db.UserLanguage.findOne({
+        where: { user_id: userId, language_id },
+      });
+      if (exists) {
+        return res.status(409).json({
+          code: -1,
+          message: "Language already enrolled",
+        });
+      }
+
+      const entry = await db.UserLanguage.create({
+        user_id: userId,
+        language_id,
+        enrolled_at: new Date(),
+      });
+
+      return res.status(201).json({
+        code: 0,
+        message: "Language enrolled successfully",
+        data: entry,
+      });
+    } catch (error) {
+      console.error("addLanguage error:", error);
+      return res.status(500).json({
+        code: -1,
+        message: error.message,
+      });
+    }
+  };
+
+  getLanguages = async (req, res) => {
+    const userId = req.user.user_id;
+    try {
+      const data = await db.UserLanguage.findAll({
+        where: { user_id: userId },
+        attributes: ["language_id", "enrolled_at"],
+        include: [
+          {
+            model: db.Language,
+            as: "language",
+          },
+        ],
+        order: [["enrolled_at", "DESC"]],
+      });
+
+      return res.json({ code: 0, message: "Fetched user languages", data });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ code: -1, message: err.message });
+    }
+  };
+
   // GET API
   get = async (req, res) => {
     const page = req.query.page || 1;
@@ -25,91 +89,6 @@ class UserController extends BaseController {
       return res.status(200).json(data);
     } catch (error) {
       return res.status(500).json({ code: -1, message: error.message });
-    }
-  };
-
-  getLastReadMangaAndChapter = async (req, res) => {
-    const userId = req.user.user_id;
-
-    try {
-      const readingHistory = await userService.getReadingHistory(userId);
-
-      if (!readingHistory || readingHistory.length === 0) {
-        return res.status(404).json({ message: "No reading history found" });
-      }
-
-      const historyData = readingHistory.map((entry) => ({
-        historyId: entry.history_id,
-        mangaTitle: entry.manga.title,
-        chapterTitle: entry.chapter.title,
-        chapterSlug: entry.chapter.slug,
-        imageTitle: entry.manga.cover_image,
-        slug: entry.manga.slug,
-        chapterNumber: entry.chapter.chapter_number,
-        last_read_at: entry.last_read_at,
-      }));
-
-      return res.status(200).json({
-        code: 0,
-        message: "ok",
-        data: {
-          user: {
-            user_id: readingHistory[0].user.user_id, // Thông tin user chung
-            username: readingHistory[0].user.username,
-            email: readingHistory[0].user.email,
-            avatar: readingHistory[0].user.avatar,
-            role: readingHistory[0].user.role,
-            createdAt: readingHistory[0].user.createdAt,
-            updatedAt: readingHistory[0].user.updatedAt,
-
-            // Danh sách các truyện và chương mà user đã đọc
-            readingHistory: historyData,
-          },
-        },
-      });
-    } catch (error) {
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  };
-
-  getFavoriteManga = async (req, res) => {
-    const userId = req.user.user_id;
-
-    try {
-      const favorites = await userService.getFavoritesByUser(userId);
-
-      if (!favorites || favorites.length === 0) {
-        return res.status(404).json({ message: "No favorite manga found" });
-      }
-
-      // Extract user information from the first favorite (same for all entries)
-      const user = favorites[0].user;
-
-      return res.status(200).json({
-        code: 0,
-        message: "ok",
-        data: {
-          user: {
-            user_id: user.user_id,
-            username: user.username,
-            email: user.email,
-            avatar: user.avatar,
-            role: user.role,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            favorites: favorites.map((fav) => ({
-              favoriteId: fav.favorite_id,
-              mangaId: fav.manga.manga_id,
-              mangaTitle: fav.manga.title,
-              slug: fav.manga.slug,
-              coverImage: fav.manga.cover_image,
-              favoritedAt: fav.createdAt,
-            })),
-          },
-        },
-      });
-    } catch (error) {
-      return res.status(500).json({ message: "Internal server error" });
     }
   };
 

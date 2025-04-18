@@ -13,6 +13,17 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "language_id",
         as: "courses",
       });
+      Language.belongsToMany(models.User, {
+        through: models.UserLanguage,
+        foreignKey: "language_id",
+        otherKey: "user_id",
+        as: "users",
+      });
+
+      Language.hasMany(models.UserLanguage, {
+        foreignKey: "language_id",
+        as: "userLanguages",
+      });
 
       // define association here
     }
