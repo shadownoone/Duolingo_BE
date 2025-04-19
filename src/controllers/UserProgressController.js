@@ -30,6 +30,21 @@ class UserProgressController extends BaseController {
     }
   };
 
+  getByUser = async (req, res) => {
+    try {
+      const userId = req.user.user_id;
+      const progresses = await db.UserProgress.findAll({
+        where: { user_id: userId },
+        order: [["lesson_id", "ASC"]],
+        raw: false,
+      });
+      return res.status(200).json({ code: 0, data: progresses });
+    } catch (error) {
+      console.error("getByUser error:", error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   completeLesson = async (req, res) => {
     const userId = req.user.user_id;
     const { lesson_id } = req.body;

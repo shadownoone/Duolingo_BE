@@ -17,6 +17,16 @@ class CourseController extends BaseController {
 
       const lessons = await db.Lesson.findAll({
         where: { course_id: courseId },
+        include: [
+          {
+            model: db.Course,
+            attributes: [
+              "course_id",
+              "course_name",
+              "description", // hoặc bất cứ field nào bạn muốn
+            ],
+          },
+        ],
         order: [["lesson_order", "ASC"]],
         offset: (page - 1) * pageSize,
         limit: pageSize,

@@ -7,6 +7,8 @@ const { authenticateUser } = require("~/middlewares/authMiddleware");
 // [GET] /Manga
 router.get("/all", UserProgressController.get);
 
+router.get("/getByUser", authenticateUser, UserProgressController.getByUser);
+
 // POST hoàn thành lesson:   /api/userProgress/complete
 router.post(
   "/complete",
