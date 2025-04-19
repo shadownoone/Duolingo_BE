@@ -3,11 +3,36 @@ const userProgressService = require("../services/userProgressService");
 const db = require("~/models");
 const BaseController = require("./BaseController");
 
+const { Op, fn, col, literal } = require("sequelize");
 class UserProgressController extends BaseController {
   constructor() {
     super("userProgress");
   }
 
+  getLeaderboard = async () => {
+    // Lấy tổng xp của mỗi user (chỉ tính những lesson đã hoàn thành)
+    const rows = await db.UserProgress.findAll({
+      where: { status: "completed" },
+      attributes: ["user_id", [fn("SUM", col("xp")), "total_xp"]],
+      group: ["user_id"],
+      order: [[literal("total_xp"), "DESC"]],
+
+      include: [
+        {
+          model: db.User,
+          attributes: ["username", "avatar"], // hoặc các field user của bạn
+        },
+      ],
+    });
+
+    // format lại cho dễ dùng
+    return rows.map((r) => ({
+      userId: r.user_id,
+      username: r.User.username,
+      avatar: r.User.avatar,
+      totalXp: r.get("total_xp"),
+    }));
+  };
   // GET API
   get = async (req, res) => {
     const page = req.query.page || 1;
