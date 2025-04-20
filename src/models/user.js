@@ -50,6 +50,16 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: null,
       },
+
+      last_practice_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      streak_count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       sequelize,

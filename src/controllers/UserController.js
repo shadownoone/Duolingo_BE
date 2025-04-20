@@ -7,6 +7,49 @@ class UserController extends BaseController {
     super("user");
   }
 
+  recordPractice = async (req, res) => {
+    const userId = req.user.user_id;
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    const user = await db.User.findByPk(userId);
+
+    let newStreak;
+    if (!user.last_practice_date) {
+      // lần đầu tiên
+      newStreak = 1;
+    } else {
+      const last = new Date(user.last_practice_date);
+      last.setHours(0, 0, 0, 0);
+
+      const diffDays = (today - last) / (1000 * 60 * 60 * 24);
+
+      if (diffDays === 1) {
+        // của hôm qua → tiếp tục streak
+        newStreak = user.streak_count + 1;
+      } else if (diffDays === 0) {
+        // đã practice hôm nay rồi → giữ nguyên
+        newStreak = user.streak_count;
+      } else {
+        // cách hôm qua > 1 ngày → reset về 1
+        newStreak = 1;
+      }
+    }
+    user.streak_count = newStreak;
+    user.last_practice_date = today;
+    await user.save();
+
+    return res.json({
+      code: 0,
+      message: "Practice recorded",
+      data: {
+        streakCount: newStreak,
+        lastPracticeDate: user.last_practice_date,
+      },
+    });
+  };
+
   addLanguage = async (req, res) => {
     const userId = req.user.user_id;
     const { language_id } = req.body;
