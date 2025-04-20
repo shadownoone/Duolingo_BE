@@ -4,10 +4,9 @@ const uploadImage = require("../../utils/uploadImage");
 const userController = require("~/controllers/UserController");
 const { authenticateUser } = require("~/middlewares/authMiddleware");
 
-// router.all('*', authenticateUser);
-
-// [GET] /users
 router.get("/all", userController.get);
+
+router.post("/practice", authenticateUser, userController.recordPractice);
 
 router.get("/getLanguage", authenticateUser, userController.getLanguages);
 
