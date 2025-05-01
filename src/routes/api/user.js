@@ -6,6 +6,10 @@ const { authenticateUser } = require("~/middlewares/authMiddleware");
 
 router.get("/all", userController.get);
 
+router.post("/buyHeart", authenticateUser, userController.purchaseHeart);
+
+router.post("/updateHeart", authenticateUser, userController.updateHeart);
+
 router.post("/practice", authenticateUser, userController.recordPractice);
 
 router.get("/getLanguage", authenticateUser, userController.getLanguages);
