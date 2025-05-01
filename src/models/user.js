@@ -60,6 +60,18 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
       },
+
+      hearts_count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 5,
+      },
+
+      lingots: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 100,
+      },
     },
     {
       sequelize,

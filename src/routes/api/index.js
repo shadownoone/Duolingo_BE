@@ -26,7 +26,8 @@ const userRouter = require("./user");
 
 const paymentRouter = require("./payments");
 
-const registerController = require("~/controllers/RegisterController");
+const chatRouter = require("./chat");
+
 const { authenticateUser } = require("~/middlewares/authMiddleware");
 
 router.use("/payments", paymentRouter);
@@ -55,6 +56,6 @@ router.use("/registers", registerRouter);
 
 router.use("/users", userRouter);
 
-// router.get('/analysis', registerController.analysis);
+router.use("/chats", authenticateUser, chatRouter);
 
 module.exports = router;

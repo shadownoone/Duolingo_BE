@@ -7,6 +7,91 @@ class UserController extends BaseController {
     super("user");
   }
 
+  updateHeart = async (req, res) => {
+    const { userId, heartsCount } = req.body;
+    if (!userId || heartsCount === undefined) {
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    try {
+      // Cập nhật số lượng trái tim trong database
+      await db.User.update(
+        { hearts_count: heartsCount },
+        { where: { user_id: userId } }
+      );
+      res.status(200).json({ message: "Hearts count updated" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update hearts count" });
+    }
+  };
+
+  purchaseHeart = async (req, res) => {
+    const userId = req.user.user_id;
+    const heartPrice = 10;
+    const quantity = req.body.quantity || 1;
+    const cost = heartPrice * quantity;
+    const maxHearts = 5;
+
+    try {
+      // Lấy user để check số lingots
+      const user = await db.User.findByPk(userId, {
+        attributes: ["lingots", "hearts_count"],
+      });
+      if (!user) {
+        return res.status(404).json({ code: -1, message: "User not found" });
+      }
+
+      if (user.hearts_count + quantity > maxHearts) {
+        return res
+          .status(400)
+          .json({
+            code: -1,
+            message: `Cannot have more than ${maxHearts} hearts`,
+          });
+      }
+
+      if (user.lingots < cost) {
+        return res
+          .status(400)
+          .json({ code: -1, message: "Not enough lingots" });
+      }
+
+      // Dùng transaction để đảm bảo atomic
+      await db.sequelize.transaction(async (t) => {
+        // cộng hearts_count
+        await db.User.increment(
+          { hearts_count: quantity },
+          { where: { user_id: userId }, transaction: t }
+        );
+        // trừ lingots
+        await db.User.decrement(
+          { lingots: cost },
+          { where: { user_id: userId }, transaction: t }
+        );
+      });
+
+      // Lấy lại thông tin mới
+      const updated = await db.User.findByPk(userId, {
+        attributes: ["lingots", "hearts_count"],
+      });
+
+      return res.status(200).json({
+        code: 0,
+        message: "Purchased heart(s) successfully",
+        data: {
+          hearts_count: updated.hearts_count,
+          lingots: updated.lingots,
+        },
+      });
+    } catch (error) {
+      console.error("purchaseHeart error:", error);
+      return res.status(500).json({
+        code: -1,
+        message: "Failed to purchase hearts",
+      });
+    }
+  };
+
   recordPractice = async (req, res) => {
     const userId = req.user.user_id;
     const today = new Date();

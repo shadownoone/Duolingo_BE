@@ -41,16 +41,17 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
+      type: {
+        type: DataTypes.STRING(50),
+      },
     },
     {
       sequelize,
       modelName: "Lesson", // Tên model (thường PascalCase)
       tableName: "Lessons", // Tên bảng trong DB
       timestamps: false, // Không dùng createdAt, updatedAt mặc định của Sequelize
-      // Nếu bạn muốn map cột createdAt của Sequelize sang created_at
-      // thì có thể dùng:
+
       createdAt: "created_at",
-      // updatedAt: false
     }
   );
 

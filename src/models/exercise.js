@@ -5,7 +5,11 @@ module.exports = (sequelize, DataTypes) => {
   class Exercise extends Model {
     static associate(models) {
       // Nếu muốn, bạn có thể khai báo quan hệ:
-      Exercise.belongsTo(models.Lesson, { foreignKey: "lesson_id" });
+      Exercise.belongsTo(models.Lesson, {
+        foreignKey: "lesson_id",
+        as: "lesson",
+      });
+
       Exercise.belongsTo(models.ExerciseType, {
         foreignKey: "exercise_type_id",
         as: "exerciseType",
