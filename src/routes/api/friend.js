@@ -5,6 +5,10 @@ const FriendController = require("~/controllers/FriendController");
 // [GET] /Rating
 router.get("/", FriendController.get);
 
+const { authenticateUser } = require("~/middlewares/authMiddleware");
+
+router.get("/getFriend", authenticateUser, FriendController.getFriends);
+
 // [POST] /Rating
 router.post("/", FriendController.create);
 
