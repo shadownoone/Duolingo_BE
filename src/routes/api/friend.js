@@ -9,6 +9,21 @@ const { authenticateUser } = require("~/middlewares/authMiddleware");
 
 router.get("/getFriend", authenticateUser, FriendController.getFriends);
 
+router.post(
+  "/follow/:friendId",
+  authenticateUser,
+  FriendController.autoFollowUser
+);
+
+router.post(
+  "/unFollow/:followedUserId",
+  authenticateUser,
+  FriendController.unfollowUser
+);
+
+//
+router.get("/getFollower", authenticateUser, FriendController.getFollwers);
+
 // [POST] /Rating
 router.post("/", FriendController.create);
 
