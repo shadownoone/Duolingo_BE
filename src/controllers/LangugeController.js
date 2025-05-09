@@ -38,78 +38,28 @@ class LanguageController extends BaseController {
     }
   };
 
-  //POST Manga
   // POST Manga
   create = async (req, res) => {
     try {
       // Lấy dữ liệu từ request body
-      const {
-        title,
-        description,
-        author,
-        cover_image,
-        status,
-        is_vip,
-        genres,
-      } = req.body;
+      const { language_code, language_name, description } = req.body;
 
-      // Kiểm tra xem title đã được cung cấp chưa
-      if (!title) {
+      if (!language_code || !language_name) {
         return res.status(400).json({ message: "Title is required" });
       }
 
-      // Tạo slug từ title
-      const slug = slugify(title, {
-        lower: true, // Chuyển sang chữ thường
-        strict: true, // Loại bỏ ký tự đặc biệt
-      });
-
-      // Kiểm tra xem slug đã tồn tại hay chưa
-      const existingManga = await db.Manga.findOne({ where: { slug } });
-      if (existingManga) {
-        return res
-          .status(400)
-          .json({ message: "Manga with this title already exists" });
-      }
-
-      // Tạo bản ghi Manga mới
-      const newManga = await db.Manga.create({
-        title,
+      const newLanguage = await db.Language.create({
+        language_code,
+        language_name,
         description,
-        author: author || "Unknown", // Nếu không có author thì set mặc định là Unknown
-        cover_image: cover_image || "", // Nếu không có ảnh bìa thì để trống
-        status: status || 0, // Mặc định là đang cập nhật (status = 0)
-        is_vip: is_vip || false, // Mặc định là không VIP
-        slug,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        views: 0, // Lượt xem ban đầu là 0
-        followers: 0, // Người theo dõi ban đầu là 0
+
+        created_at: new Date(),
       });
-
-      // Xử lý genres nếu có trong request
-      if (genres && Array.isArray(genres)) {
-        for (const genreName of genres) {
-          // Tìm genre trong bảng Genre
-          let genre = await db.Genre.findOne({ where: { name: genreName } });
-
-          // Nếu genre không tồn tại, tạo mới
-          if (!genre) {
-            genre = await db.Genre.create({ name: genreName });
-          }
-
-          // Thêm thể loại vào bảng Manga_Genres
-          await db.Manga_Genres.create({
-            manga_id: newManga.manga_id,
-            genre_id: genre.genre_id,
-          });
-        }
-      }
 
       // Trả về kết quả
       return res.status(201).json({
-        message: "Manga created successfully",
-        data: newManga,
+        message: "Language created successfully",
+        data: newLanguage,
       });
     } catch (error) {
       console.error("Error creating manga:", error);
@@ -117,72 +67,28 @@ class LanguageController extends BaseController {
     }
   };
 
-  //PUT Manga
-  //PUT Manga
+  //PUT Language
   update = async (req, res) => {
     const { id } = req.params; // Lấy id từ params
-    const { title, description, author, cover_image, status, is_vip, genres } =
-      req.body; // Lấy thông tin cập nhật từ body
+    const { language_name, description } = req.body; // Lấy thông tin cập nhật từ body
 
     try {
-      // Kiểm tra nếu Manga có tồn tại hay không
-      const manga = await db.Manga.findByPk(id);
+      const manga = await db.Language.findByPk(id);
       if (!manga) {
-        return res.status(404).json({ message: "Manga not found" });
+        return res.status(404).json({ message: "Language not found" });
       }
 
-      // Nếu có cập nhật title thì tạo slug mới từ title
-      let newSlug = manga.slug; // Giữ nguyên slug nếu không cập nhật title
-      if (title && title !== manga.title) {
-        const normalizedTitle = removeVietnameseTones(title); // Chuẩn hóa title bằng cách loại bỏ dấu
-        newSlug = slugify(normalizedTitle, {
-          lower: true, // Chuyển sang chữ thường
-          strict: true, // Loại bỏ ký tự đặc biệt
-        });
-        console.log("New slug:", newSlug);
-      }
-
-      // Kiểm tra và chuyển đổi status và is_vip về số (integer)
-      const updatedStatus =
-        status !== undefined ? parseInt(status, 10) : manga.status;
-      const updatedIsVip =
-        is_vip !== undefined ? (is_vip ? 1 : 0) : manga.is_vip;
-
-      // Cập nhật thông tin Manga
-      const updatedManga = await manga.update({
-        title: title || manga.title,
+      const updatedLanguage = await manga.update({
+        language_name: language_name || manga.language_name,
         description: description || manga.description,
-        author: author || manga.author,
-        cover_image: cover_image || manga.cover_image,
-        status: updatedStatus,
-        is_vip: updatedIsVip,
-        slug: newSlug,
-        updatedAt: new Date(),
       });
-
-      // Cập nhật các thể loại của Manga
-      if (genres && Array.isArray(genres)) {
-        // Xóa các thể loại hiện tại của manga từ bảng manga_genres
-        await db.Manga_Genres.destroy({ where: { manga_id: id } });
-
-        // Thêm các thể loại mới vào bảng manga_genres
-        for (const genreName of genres) {
-          const genre = await db.Genre.findOne({ where: { name: genreName } });
-          if (genre) {
-            await db.Manga_Genres.create({
-              manga_id: id,
-              genre_id: genre.genre_id,
-            });
-          }
-        }
-      }
 
       return res.status(200).json({
-        message: "Manga updated successfully",
-        data: updatedManga,
+        message: "updatedLanguage updated successfully",
+        data: updatedLanguage,
       });
     } catch (error) {
-      console.error("Error updating manga:", error);
+      console.error("Error updating updatedLanguage:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   };
@@ -208,42 +114,30 @@ class LanguageController extends BaseController {
     }
   };
 
-  // API tìm kiếm truyện theo từ khóa
-  searchManga = async (req, res) => {
+  // SEARCH LANGUAGE
+  searchLanguage = async (req, res) => {
     const { q } = req.query; // Lấy từ khóa tìm kiếm từ query params
     if (!q) {
       return res.status(400).json({ message: "Keyword is required" });
     }
 
     try {
-      const mangas = await db.Manga.findAll({
+      const languages = await db.Language.findAll({
         where: {
-          // Tìm kiếm theo tiêu đề hoặc mô tả truyện có chứa từ khóa
-          [Op.or]: [{ title: { [Op.like]: `%${q}%` } }],
+          [Op.or]: [
+            { language_name: { [Op.like]: `%${q}%` } },
+            { language_code: { [Op.like]: `%${q}%` } },
+          ],
         },
-        include: [
-          {
-            model: db.Chapter,
-            as: "chapters",
-            limit: 1, // Lấy chương mới nhất
-            order: [["chapter_number", "DESC"]],
-          },
-          {
-            model: db.Genre,
-            as: "genres",
-            attributes: ["name"], // Lấy tên thể loại
-            through: { attributes: [] }, // Bỏ qua các thuộc tính của bảng liên kết
-          },
-        ],
       });
 
-      if (mangas.length === 0) {
-        return res.status(404).json({ message: "No mangas found" });
+      if (languages.length === 0) {
+        return res.status(404).json({ message: "No languages found" });
       }
 
       return res.status(200).json({
         success: true,
-        data: mangas,
+        data: languages,
       });
     } catch (error) {
       return res.status(500).json({
@@ -254,18 +148,18 @@ class LanguageController extends BaseController {
     }
   };
 
-  //DELETE Manga
+  //DELETE Language
   delete = async (req, res) => {
     try {
-      const manga_id = req.params.manga_id;
-      console.log(manga_id);
+      const language_id = req.params.language_id;
+      console.log(language_id);
 
-      await mangaService.delete({
-        where: { manga_id: manga_id },
+      await languageService.delete({
+        where: { language_id: language_id },
       });
 
       return res.status(200).json({
-        message: "Đã xóa manga!",
+        message: "Đã xóa Language!",
       });
     } catch (error) {
       console.error("Lỗi khi xóa manga:", error);
