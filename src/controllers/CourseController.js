@@ -8,6 +8,100 @@ class CourseController extends BaseController {
     super("course");
   }
 
+  create = async (req, res) => {
+    try {
+      // Lấy dữ liệu từ request body
+      const { course_name, description, language_id } = req.body;
+
+      const newCourse = await db.Course.create({
+        course_name,
+        description,
+        language_id,
+        created_at: new Date(),
+      });
+      // Trả về kết quả
+      return res.status(201).json({
+        code: 0,
+        message: "ok",
+        data: newCourse,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
+  update = async (req, res) => {
+    const { id } = req.params; // Lấy id từ params
+    const { course_name, description } = req.body; // Lấy thông tin cập nhật từ body
+
+    try {
+      const course = await db.Course.findByPk(id);
+      if (!course) {
+        return res.status(404).json({ message: "course not found" });
+      }
+
+      const updatedCourse = await course.update({
+        course_name: course_name || course.course_name,
+        description: description || course.description,
+      });
+
+      return res.status(200).json({
+        message: "course updated successfully",
+        data: updatedCourse,
+      });
+    } catch (error) {
+      console.error("Error updating updatedCourse:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  delete = async (req, res) => {
+    try {
+      const course_id = req.params.course_id;
+      console.log(course_id);
+
+      await courseService.delete({
+        where: { course_id: course_id },
+      });
+
+      return res.status(200).json({
+        message: "Đã xóa course_id!",
+      });
+    } catch (error) {
+      console.error("Lỗi khi xóa manga:", error);
+      return res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+    }
+  };
+
+  getCoursesByLanguageP2 = async (req, res) => {
+    try {
+      const { languageId } = req.params;
+      const language = await db.Language.findOne({
+        where: { language_id: languageId },
+        include: [
+          {
+            model: db.Course,
+            as: "courses", // Phải khớp với alias đã định nghĩa trong association
+          },
+        ],
+      });
+      if (!language) {
+        return res
+          .status(404)
+          .json({ code: -1, message: "Language not found" });
+      }
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: language,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   //get lesson by course
   getLessonByCourse = async (req, res) => {
     try {

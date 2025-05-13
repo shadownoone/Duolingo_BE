@@ -8,6 +8,31 @@ class LessonController extends BaseController {
     super("lesson");
   }
 
+  getLessByCourse = async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const lesson = await db.Course.findOne({
+        where: { course_id: courseId },
+        include: [
+          {
+            model: db.Lesson,
+          },
+        ],
+      });
+      if (!lesson) {
+        return res.status(404).json({ code: -1, message: "lesson not found" });
+      }
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: lesson,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
   get = async (req, res) => {
     const page = req.query.page || 1;
     const pageSize = req.query.pageSize || 50;
@@ -76,48 +101,74 @@ class LessonController extends BaseController {
     }
   };
 
-  // Method for creating a new chapter
   create = async (req, res) => {
-    const { manga_id, chapter_number, title, images } = req.body; // 'images' là một mảng URL hình ảnh của chapter
-
-    try {
-      // 1. Tạo slug từ chapter_number
-      const slug = slugify(`chapter-${chapter_number}`, { lower: true });
-
-      // 2. Tạo mới chapter
-      const newChapter = await db.Chapter.create({
-        manga_id,
-        chapter_number,
-        title,
-        slug,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    const { course_id, lesson_title, lesson_order, content, type } = req.body;
+    if (!course_id || !lesson_title || !lesson_order) {
+      return res.status(400).json({
+        message:
+          "Missing required fields: course_id, lesson_title, lesson_order",
       });
-
-      // 3. Nếu có danh sách ảnh, thêm vào bảng 'chapter_images'
-      if (images && Array.isArray(images) && images.length > 0) {
-        const chapterImages = images.map((imageUrl, index) => ({
-          chapter_id: newChapter.chapter_id,
-          image_url: imageUrl,
-          image_order: index + 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }));
-
-        // Bulk insert images
-        await db.Chapter_Images.bulkCreate(chapterImages);
-      }
-
-      // 4. Trả về thông tin chapter mới tạo
+    }
+    try {
+      const newLesson = await db.Lesson.create({
+        course_id,
+        lesson_title,
+        lesson_order,
+        content,
+        type,
+      });
       res.status(201).json({
-        message: "Chapter created successfully",
-        data: newChapter,
+        message: "Lesson created successfully",
+        data: newLesson,
       });
     } catch (error) {
-      console.error("Error creating chapter:", error);
+      console.error("Error creating Lesson:", error);
       res
         .status(500)
         .json({ message: "Internal server error", error: error.message });
+    }
+  };
+
+  update = async (req, res) => {
+    const { lessonId } = req.params;
+    const { lesson_title, lesson_order, content, type } = req.body;
+
+    try {
+      const lesson = await db.Lesson.findByPk(lessonId);
+      if (!lesson) {
+        return res.status(404).json({ message: "Lesson not found" });
+      }
+
+      const updatedLesson = await lesson.update({
+        lesson_title: lesson_title || lesson.lesson_title,
+        lesson_order: lesson_order || lesson.lesson_order,
+        content: content || lesson.content,
+        type: type || lesson.type,
+      });
+
+      return res.status(200).json({
+        message: "Lesson updated successfully",
+        data: updatedLesson,
+      });
+    } catch (error) {
+      console.error("Error updating Lesson:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  delete = async (req, res) => {
+    try {
+      const lesson_id = req.params.lesson_id;
+      console.log(lesson_id);
+
+      await lessonService.delete({
+        where: { lesson_id: lesson_id },
+      });
+
+      return res.status(200).json({ message: "Lesson deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting Lesson:", error);
+      return res.status(500).json({ message: "Internal server error" });
     }
   };
 }

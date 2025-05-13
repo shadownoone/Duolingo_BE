@@ -42,12 +42,10 @@ class UserController extends BaseController {
       }
 
       if (user.hearts_count + quantity > maxHearts) {
-        return res
-          .status(400)
-          .json({
-            code: -1,
-            message: `Cannot have more than ${maxHearts} hearts`,
-          });
+        return res.status(400).json({
+          code: -1,
+          message: `Cannot have more than ${maxHearts} hearts`,
+        });
       }
 
       if (user.lingots < cost) {
@@ -258,15 +256,25 @@ class UserController extends BaseController {
     }
   };
 
-  //getTotalUser
+  // getTotalUser
   totalUsers = async (req, res) => {
     try {
+      // Lấy tổng số người dùng
       const totalUsers = await db.User.count("user_id");
+
+      // Lấy danh sách người dùng
+      const users = await db.User.findAll({
+        attributes: ["user_id", "username", "email", "created_at"], // Chọn các trường cần thiết
+        limit: 10, // Có thể tùy chỉnh số lượng bản ghi trả về
+        offset: 0, // Có thể tùy chỉnh để phân trang
+      });
+
       return res.status(200).json({
         code: 0,
         message: "Success",
         data: {
           totalUsers,
+          users, // Danh sách người dùng
         },
       });
     } catch (error) {
