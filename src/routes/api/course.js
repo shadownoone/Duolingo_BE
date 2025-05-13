@@ -5,18 +5,20 @@ const { authenticateUser } = require("~/middlewares/authMiddleware");
 
 // [GET] /Favorites
 router.get("/", courseController.get);
-
 router.get("/:courseId", courseController.getLessonByCourse);
+
+router.get("/lan/:languageId", courseController.getCoursesByLanguageP2);
+
+// router.get("/:courseId", courseController.getLessonByCourse);
 
 // [POST] /Favorites
 // router.post("/", courseController.create);
 
-router.post("/add", authenticateUser, courseController.addFavorite);
+router.post("/create", courseController.create);
 
-// [PUT] /Favorites/:id
 router.put("/:id", courseController.update);
 
 // [DELETE]
-router.delete("/remove", authenticateUser, courseController.removeFavorite);
+router.delete("/:course_id", courseController.delete);
 
 module.exports = router;

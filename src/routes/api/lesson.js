@@ -5,15 +5,17 @@ const LessonController = require("~/controllers/LessonController");
 // [GET] /Chapter
 router.get("/", LessonController.get);
 
+router.get("/les/:courseId", LessonController.getLessByCourse);
+
 router.get("/:lessonId", LessonController.getLessonDetail);
 
-// [POST] /Chapter
+// [POST]
 router.post("/", LessonController.create);
 
-// [PUT] /Chapter/:id
-router.put("/:id", LessonController.update);
+// [PUT]
+router.put("/:lessonId", LessonController.update);
 
 // [DELETE] /Chapter/:id
-router.delete("/:id", LessonController.delete);
+router.delete("/:lesson_id", LessonController.delete);
 
 module.exports = router;

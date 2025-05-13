@@ -38,25 +38,19 @@ class LanguageController extends BaseController {
     }
   };
 
-  // POST Manga
+  // POST
   create = async (req, res) => {
     try {
-      // Lấy dữ liệu từ request body
       const { language_code, language_name, description } = req.body;
-
       if (!language_code || !language_name) {
         return res.status(400).json({ message: "Title is required" });
       }
-
       const newLanguage = await db.Language.create({
         language_code,
         language_name,
         description,
-
         created_at: new Date(),
       });
-
-      // Trả về kết quả
       return res.status(201).json({
         message: "Language created successfully",
         data: newLanguage,

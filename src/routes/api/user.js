@@ -4,7 +4,7 @@ const uploadImage = require("../../utils/uploadImage");
 const userController = require("~/controllers/UserController");
 const { authenticateUser } = require("~/middlewares/authMiddleware");
 
-router.get("/all", userController.get);
+router.get("", userController.get);
 
 router.post("/buyHeart", authenticateUser, userController.purchaseHeart);
 
