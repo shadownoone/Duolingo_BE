@@ -7,69 +7,88 @@ class ExerciseTypeController extends BaseController {
     super("exerciseType");
   }
 
-  createGenre = async (req, res) => {
-    const genreName = req.body.genreName; // Sử dụng req.body thay vì req.params nếu truyền qua Body
-
+  get = async (req, res) => {
+    const page = req.query.page || 1;
+    const pageSize = req.query.pageSize || 50;
     try {
-      // Kiểm tra xem genre đã tồn tại chưa
-      let genre = await db.Genre.findOne({ where: { name: genreName } });
-      if (!genre) {
-        // Nếu chưa tồn tại, tạo genre mới
-        genre = await db.Genre.create({ name: genreName });
+      const data = await exerciseTypeService.find({
+        page: page,
+        pageSize: pageSize,
+
+        raw: false,
+      });
+
+      if (data.code === -1) {
+        return res.status(500).json(data);
       }
 
-      // Trả về genre đã tồn tại hoặc vừa tạo
-      res.status(201).json({ message: "Genre checked/added", data: genre });
+      return res.status(200).json(data);
     } catch (error) {
-      console.error("Error details:", error); // Ghi chi tiết lỗi vào console
+      return res.status(500).json({ code: -1, message: error.message });
+    }
+  };
+
+  createTypeName = async (req, res) => {
+    const exercise_type_name = req.body.exercise_type_name;
+
+    try {
+      let exTypeName = await db.ExerciseType.findOne({
+        where: { exercise_type_name: exercise_type_name },
+      });
+      if (!exTypeName) {
+        exTypeName = await db.ExerciseType.create({
+          exercise_type_name: exercise_type_name,
+        });
+      }
+
+      // Trả về exTypeName đã tồn tại hoặc vừa tạo
       res
-        .status(500)
-        .json({ message: "Error checking/adding genre", error: error.message });
+        .status(201)
+        .json({ message: "exTypeName checked/added", data: exTypeName });
+    } catch (error) {
+      console.error("Error details:", error);
+      res.status(500).json({
+        message: "Error checking/adding exTypeName",
+        error: error.message,
+      });
     }
   };
 
   update = async (req, res) => {
-    const { id } = req.params; // Lấy id từ params
-    const { genreName } = req.body; // Lấy tên thể loại mới từ body
+    const { id } = req.params;
+    const { exercise_type_name } = req.body;
 
     try {
-      // Kiểm tra xem genre có tồn tại không
-      let genre = await db.Genre.findByPk(id);
-      if (!genre) {
+      let exTypeName = await db.ExerciseType.findByPk(id);
+      if (!exTypeName) {
         return res.status(404).json({ message: "Genre not found" });
       }
-
-      // Cập nhật tên thể loại
-      await genre.update({ name: genreName });
-
-      // Trả về genre đã được cập nhật
+      await exTypeName.update({ exercise_type_name: exercise_type_name });
       res
         .status(200)
-        .json({ message: "Genre updated successfully", data: genre });
+        .json({ message: "Genre updated successfully", data: exTypeName });
     } catch (error) {
-      console.error("Error updating genre:", error); // Ghi chi tiết lỗi vào console
+      console.error("Error updating exTypeName:", error);
       res
         .status(500)
-        .json({ message: "Error updating genre", error: error.message });
+        .json({ message: "Error updating exTypeName", error: error.message });
     }
   };
 
   delete = async (req, res) => {
-    const { id } = req.params; // Lấy id từ params
+    const { id } = req.params;
 
     try {
-      // Kiểm tra nếu genre có tồn tại hay không
-      const genre = await db.Genre.findByPk(id);
-      if (!genre) {
-        return res.status(404).json({ message: "Genre not found" });
+      const typeName = await db.ExerciseType.findByPk(id);
+      if (!typeName) {
+        return res.status(404).json({ message: "typeName not found" });
       }
 
-      // Xóa genre
-      await genre.destroy();
+      await typeName.destroy();
 
-      return res.status(200).json({ message: "Genre deleted successfully" });
+      return res.status(200).json({ message: "typeName deleted successfully" });
     } catch (error) {
-      console.error("Error deleting genre:", error);
+      console.error("Error deleting typeName:", error);
       return res
         .status(500)
         .json({ message: "Internal server error", error: error.message });

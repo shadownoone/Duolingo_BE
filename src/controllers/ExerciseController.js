@@ -8,23 +8,40 @@ class ExerciseController extends BaseController {
   }
 
   // GET API
-  get = async (req, res) => {
-    const page = req.query.page || 1;
-    const pageSize = req.query.pageSize || 10;
+  getExerciseByLesson = async (req, res) => {
     try {
-      const data = await exerciseService.find({
-        page: page,
-        pageSize: pageSize,
-
-        raw: false,
+      const { lessonId } = req.params;
+      const exercise = await db.Lesson.findOne({
+        where: { lesson_id: lessonId },
+        include: [
+          {
+            model: db.Exercise,
+            as: "exercises",
+            include: [
+              {
+                model: db.ExerciseType,
+                as: "exerciseType",
+              },
+              {
+                model: db.ExerciseOption,
+                as: "options",
+              },
+            ],
+          },
+        ],
       });
-
-      if (data.code === -1) {
-        return res.status(500).json(data);
+      if (!exercise) {
+        return res
+          .status(404)
+          .json({ code: -1, message: "exercise not found" });
       }
-
-      return res.status(200).json(data);
+      return res.status(200).json({
+        code: 0,
+        message: "ok",
+        data: exercise,
+      });
     } catch (error) {
+      console.error(error);
       return res.status(500).json({ code: -1, message: error.message });
     }
   };

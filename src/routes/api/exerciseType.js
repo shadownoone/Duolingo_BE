@@ -2,18 +2,18 @@ const router = require("express").Router();
 
 const ExerciseTypeController = require("~/controllers/ExerciseTypeController");
 
-// [GET] /Genre
+// [GET] /exerciseType
 router.get("/all", ExerciseTypeController.get);
 
 router.get("/:genreName", ExerciseTypeController.getMangaByGenre);
 
-// [POST] /Genre
-router.post("/add", ExerciseTypeController.createGenre);
+// [POST] /exerciseType
+router.post("/add", ExerciseTypeController.createTypeName);
 
-// [PUT] /Genre/:id
+// [PUT] /exerciseType/:id
 router.put("/:id", ExerciseTypeController.update);
 
-// [DELETE] /Genre/:id
+// [DELETE] /exerciseType/:id
 router.delete("/:id", ExerciseTypeController.delete);
 
 module.exports = router;

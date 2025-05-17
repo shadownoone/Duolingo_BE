@@ -4,7 +4,7 @@ const ExerciseController = require("~/controllers/ExerciseController");
 const { authenticateUser } = require("~/middlewares/authMiddleware");
 
 // [GET] /History
-router.get("/", ExerciseController.get);
+router.get("/:lessonId", ExerciseController.getExerciseByLesson);
 
 // [POST] /History
 router.post("/", ExerciseController.create);
