@@ -48,6 +48,9 @@ module.exports = (sequelize, DataTypes) => {
       hints: {
         type: DataTypes.TEXT,
       },
+      audio_url: {
+        type: DataTypes.STRING,
+      },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

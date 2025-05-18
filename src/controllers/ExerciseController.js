@@ -1,6 +1,7 @@
 const exerciseService = require("../services/exerciseService");
 const db = require("~/models");
 const BaseController = require("./BaseController");
+const { uploadMedia } = require("~/utils/uploadImage");
 
 class ExerciseController extends BaseController {
   constructor() {
@@ -46,83 +47,216 @@ class ExerciseController extends BaseController {
     }
   };
 
-  update = async (req, res) => {
-    const userId = req.user.user_id;
-    const mangaId = req.body.manga_id;
-    const chapterId = req.body.chapter_id;
-
+  create = async (req, res) => {
     try {
-      // Kiểm tra xem lịch sử đã tồn tại cho manga và chapter này chưa
-      const historiesResponse = await exerciseService.find({
-        where: {
-          user_id: userId,
-          manga_id: mangaId, // Chỉ tìm lịch sử đọc của manga này
-        },
-        findOne: true, // Tìm lịch sử của một chapter cụ thể
+      // 1. Lấy dữ liệu từ body
+      const {
+        lesson_id,
+        exercise_type_id,
+        question_content,
+        answer,
+        hints = "",
+        options = [], // mảng { option_text, is_correct }
+      } = req.body;
+
+      let mediaUrl = null;
+      if (req.files?.media) {
+        try {
+          mediaUrl = await uploadMedia(req.files.media.tempFilePath);
+        } catch (err) {
+          console.error("uploadMedia error:", err);
+          return res
+            .status(500)
+            .json({ message: "Upload thất bại", detail: err.message });
+        }
+      }
+
+      // 2. Validate
+      if (!lesson_id) {
+        return res.status(400).json({ message: "lesson_id is required" });
+      }
+      if (!exercise_type_id) {
+        return res
+          .status(400)
+          .json({ message: "exercise_type_id is required" });
+      }
+      if (!question_content) {
+        return res
+          .status(400)
+          .json({ message: "question_content is required" });
+      }
+      if (!answer) {
+        return res.status(400).json({ message: "answer is required" });
+      }
+
+      // 3. Kiểm tra trùng (optional)
+      const existed = await db.Exercise.findOne({
+        where: { lesson_id, question_content },
       });
-
-      if (
-        historiesResponse &&
-        historiesResponse.code === 0 &&
-        historiesResponse.data
-      ) {
-        // Nếu có lịch sử cho chapter hiện tại, cập nhật
-        const history = historiesResponse.data; // lấy bản ghi lịch sử
-
-        // Cập nhật thuộc tính last_read_at và chapter_id
-        history.chapter_id = chapterId;
-        history.last_read_at = new Date();
-
-        // Gọi phương thức update để lưu thay đổi
-        await exerciseService.update({
-          where: {
-            user_id: userId,
-            manga_id: mangaId,
-          },
-          data: history,
-        });
-
-        console.log("History updated successfully");
-      } else {
-        // Nếu chưa có lịch sử, tạo mới
-
-        await exerciseService.create({
-          user_id: userId,
-          manga_id: mangaId,
-          chapter_id: chapterId,
-          last_read_at: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+      if (existed) {
+        return res.status(400).json({
+          message:
+            "An exercise with the same question already exists in this lesson",
         });
       }
 
-      res.status(200).json({ message: "Lịch sử đọc đã được cập nhật" });
+      // 4. Tạo bản ghi Exercise
+      const newExercise = await db.Exercise.create({
+        lesson_id,
+        exercise_type_id,
+        question_content,
+        answer,
+        hints,
+        audio_url: mediaUrl,
+      });
+
+      // 5. Tạo các options (nếu có)
+      if (Array.isArray(options) && options.length) {
+        const opts = options.map((o) => ({
+          exercise_id: newExercise.exercise_id,
+          option_text: o.option_text,
+          is_correct: o.is_correct === true,
+        }));
+        await db.ExerciseOption.bulkCreate(opts);
+      }
+
+      // 6. Query lại để trả về đầy đủ exerciseType + options
+      const created = await db.Exercise.findOne({
+        where: { exercise_id: newExercise.exercise_id },
+        include: [
+          { model: db.ExerciseType, as: "exerciseType" },
+          { model: db.ExerciseOption, as: "options" },
+        ],
+      });
+
+      // 7. Trả về client
+      return res.status(201).json({
+        message: "Exercise created successfully",
+        data: created,
+      });
     } catch (error) {
-      console.error("Error occurred:", error);
-      res.status(500).json({ message: "Có lỗi xảy ra", error });
+      console.error("Error creating exercise:", error);
+      return res.status(500).json({
+        message: "Internal server error",
+      });
     }
   };
 
-  // DELETE
-  delete = async (req, res) => {
+  update = async (req, res) => {
+    const { exercise_id } = req.params;
+    const {
+      lesson_id,
+      exercise_type_id,
+      question_content,
+      answer,
+      hints = "",
+      options = [], // mảng { option_text, is_correct }
+    } = req.body;
+
+    // transaction để đảm bảo atomic
+    const t = await db.sequelize.transaction();
     try {
-      const historyId = req.body.historyId;
-
-      // Tìm và xóa yêu thích bằng history_id
-      const deletedHistory = await exerciseService.delete({
-        where: { history_id: historyId },
+      // 1. Tìm exercise
+      const exercise = await db.Exercise.findByPk(exercise_id, {
+        transaction: t,
       });
-
-      if (!deletedHistory) {
-        return res.status(404).json({ message: "Không tìm thấy mục lịch sử." });
+      if (!exercise) {
+        await t.rollback();
+        return res.status(404).json({ message: "Exercise not found" });
       }
 
+      // 2. Validate (nếu cần)
+      if (lesson_id == null) {
+        await t.rollback();
+        return res.status(400).json({ message: "lesson_id is required" });
+      }
+      if (exercise_type_id == null) {
+        await t.rollback();
+        return res
+          .status(400)
+          .json({ message: "exercise_type_id is required" });
+      }
+      if (!question_content) {
+        await t.rollback();
+        return res
+          .status(400)
+          .json({ message: "question_content is required" });
+      }
+      if (!answer) {
+        await t.rollback();
+        return res.status(400).json({ message: "answer is required" });
+      }
+
+      // 3. Update exercise
+      await exercise.update(
+        {
+          lesson_id,
+          exercise_type_id,
+          question_content,
+          answer,
+          hints,
+        },
+        { transaction: t }
+      );
+
+      // 4. Xóa options cũ
+      await db.ExerciseOption.destroy({
+        where: { exercise_id },
+        transaction: t,
+      });
+
+      // 5. Tạo lại options mới nếu có
+      if (Array.isArray(options) && options.length) {
+        const opts = options.map((o) => ({
+          exercise_id: parseInt(exercise_id, 10),
+          option_text: o.option_text,
+          is_correct: o.is_correct === true,
+        }));
+        await db.ExerciseOption.bulkCreate(opts, { transaction: t });
+      }
+
+      // 6. Commit
+      await t.commit();
+
+      // 7. Lấy lại bản ghi đầy đủ để trả về
+      const updated = await db.Exercise.findByPk(exercise_id, {
+        include: [
+          { model: db.ExerciseType, as: "exerciseType" },
+          { model: db.ExerciseOption, as: "options" },
+        ],
+      });
+
       return res.status(200).json({
-        message: "Đã xóa khỏi danh sách lịch sử thành công!",
+        message: "Exercise updated successfully",
+        data: updated,
       });
     } catch (error) {
-      console.error("Lỗi khi xóa lịch sử:", error);
-      return res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+      await t.rollback();
+      console.error("Error updating exercise:", error);
+      return res.status(500).json({
+        message: "Internal server error",
+      });
+    }
+  };
+
+  delete = async (req, res) => {
+    const { exercise_id } = req.params;
+    try {
+      const exercise = await db.Exercise.findByPk(exercise_id);
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+
+      await exercise.destroy();
+
+      return res.status(200).json({
+        message: "Exercise deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting exercise:", error);
+      return res.status(500).json({
+        message: "Internal server error",
+      });
     }
   };
 }

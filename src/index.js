@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const db = require("~/models");
 const passport = require("passport");
+const fileUpload = require("express-fileupload");
 const authRoute = require("./routes/api/auth");
 const cookieSession = require("cookie-session");
 const PayOS = require("@payos/node");
@@ -98,6 +99,15 @@ app.use(
   })
 );
 app.use(express.json({ limit: "50mb" }));
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    createParentPath: true,
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB max
+  })
+);
 
 app.use((req, res, next) => {
   res.io = io;
