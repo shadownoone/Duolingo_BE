@@ -49,14 +49,13 @@ class ExerciseController extends BaseController {
 
   create = async (req, res) => {
     try {
-      // 1. Lấy dữ liệu từ body
       const {
         lesson_id,
         exercise_type_id,
         question_content,
         answer,
         hints = "",
-        options = [], // mảng { option_text, is_correct }
+        options = [],
       } = req.body;
 
       let mediaUrl = null;
@@ -111,13 +110,23 @@ class ExerciseController extends BaseController {
       });
 
       // 5. Tạo các options (nếu có)
-      if (Array.isArray(options) && options.length) {
-        const opts = options.map((o) => ({
+      let opts = [];
+      if (req.body.options) {
+        try {
+          opts = JSON.parse(req.body.options);
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid options format" });
+        }
+      }
+
+      // rồi dùng opts để tạo
+      if (Array.isArray(opts) && opts.length) {
+        const payload = opts.map((o) => ({
           exercise_id: newExercise.exercise_id,
           option_text: o.option_text,
-          is_correct: o.is_correct === true,
+          is_correct: !!o.is_correct,
         }));
-        await db.ExerciseOption.bulkCreate(opts);
+        await db.ExerciseOption.bulkCreate(payload);
       }
 
       // 6. Query lại để trả về đầy đủ exerciseType + options
@@ -150,7 +159,7 @@ class ExerciseController extends BaseController {
       question_content,
       answer,
       hints = "",
-      options = [], // mảng { option_text, is_correct }
+      options = [],
     } = req.body;
 
     // transaction để đảm bảo atomic
@@ -187,6 +196,19 @@ class ExerciseController extends BaseController {
         return res.status(400).json({ message: "answer is required" });
       }
 
+      let mediaUrl = null;
+      if (req.files?.media) {
+        try {
+          mediaUrl = await uploadMedia(req.files.media.tempFilePath);
+        } catch (err) {
+          await t.rollback();
+          console.error("uploadMedia error:", err);
+          return res
+            .status(500)
+            .json({ message: "Upload media failed", detail: err.message });
+        }
+      }
+
       // 3. Update exercise
       await exercise.update(
         {
@@ -195,6 +217,7 @@ class ExerciseController extends BaseController {
           question_content,
           answer,
           hints,
+          ...(mediaUrl !== null && { audio_url: mediaUrl }),
         },
         { transaction: t }
       );
@@ -205,14 +228,23 @@ class ExerciseController extends BaseController {
         transaction: t,
       });
 
-      // 5. Tạo lại options mới nếu có
-      if (Array.isArray(options) && options.length) {
-        const opts = options.map((o) => ({
-          exercise_id: parseInt(exercise_id, 10),
+      let opts = [];
+      if (req.body.options) {
+        try {
+          opts = JSON.parse(req.body.options);
+        } catch {
+          await t.rollback();
+          return res.status(400).json({ message: "Invalid options format" });
+        }
+      }
+
+      if (Array.isArray(opts) && opts.length) {
+        const newOptions = opts.map((o) => ({
+          exercise_id: exercise_id,
           option_text: o.option_text,
-          is_correct: o.is_correct === true,
+          is_correct: !!o.is_correct,
         }));
-        await db.ExerciseOption.bulkCreate(opts, { transaction: t });
+        await db.ExerciseOption.bulkCreate(newOptions, { transaction: t });
       }
 
       // 6. Commit
