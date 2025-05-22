@@ -26,6 +26,9 @@ module.exports = (sequelize, DataTypes) => {
       icon_url: {
         type: DataTypes.STRING(255),
       },
+      xp_threshold: {
+        type: DataTypes.INTEGER,
+      },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
