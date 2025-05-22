@@ -35,6 +35,13 @@ const { sequelize, connect } = require("./config/connection");
 const helpers = require("./helpers/handlebars");
 const socketService = require("./services/socketService");
 const { authenticateUser } = require("./middlewares/authMiddleware");
+const {
+  VNPay,
+  ignoreLogger,
+  ProductCode,
+  VnpLocale,
+  dateFormat,
+} = require("vnpay");
 
 const generateOrderCode = () => {
   return Math.floor(Math.random() * 100000); // Số ngẫu nhiên nhỏ hơn 1 tỷ
@@ -117,6 +124,7 @@ app.use((req, res, next) => {
 routes(app);
 
 const YOUR_DOMAIN = "http://localhost:5173";
+
 app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
   try {
     console.log("🚀 ~ req.user:", req.user); // Kiểm tra log user
@@ -134,7 +142,7 @@ app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
     const paymentLink = await payos.createPaymentLink(order);
 
     // Sử dụng req.user.user_id thay vì req.user.id
-    await db.Payments.create({
+    await db.Payment.create({
       user_id: req.user.user_id,
       amount: order.amount,
       status: "success",
@@ -148,52 +156,36 @@ app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
   }
 });
 
+app.get("/receive-hook", (req, res) => {
+  return res.sendStatus(200);
+});
+
+// Thực sự xử lý POST
 app.post("/receive-hook", async (req, res) => {
   try {
+    console.log("vao roi");
+
     console.log("Webhook received:", req.body);
-
     const { orderCode } = req.body.data;
+    console.log("Order code:", orderCode);
 
-    if (!orderCode) {
+    if (!orderCode)
       return res.status(400).json({ message: "Order code is missing" });
-    }
 
-    const payment = await db.Payments.findOne({
+    const payment = await db.Payment.findOne({
       where: { order_code: orderCode },
     });
-
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found" });
-    }
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
     await payment.update({ status: "success" });
+    const user = await db.User.findOne({ where: { user_id: payment.user_id } });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const user = await db.User.findOne({
-      where: { user_id: payment.user_id },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const vipExpiration = moment().add(30, "days").toDate();
-
-    await user.update({
-      is_vip: 1,
-      vip_expiration: vipExpiration,
-    });
-
-    console.log(`User ${user.username} is now VIP until ${vipExpiration}`);
-
-    return res.status(200).json({
-      message: "Payment recorded and user VIP status updated successfully",
-    });
-  } catch (error) {
-    console.error("Error handling webhook:", error);
-
-    if (!res.headersSent) {
-      return res.status(500).json({ message: "Error handling webhook" });
-    }
+    await user.update({ is_vip: 1 });
+    return res.status(200).json({ message: "User upgraded to VIP" });
+  } catch (err) {
+    console.error(err);
+    return res.sendStatus(500);
   }
 });
 
