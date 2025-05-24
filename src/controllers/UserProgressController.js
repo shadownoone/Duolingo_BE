@@ -87,7 +87,16 @@ class UserProgressController extends BaseController {
       include: [
         {
           model: db.User,
-          attributes: ["username", "avatar"], // hoặc các field user của bạn
+          attributes: [
+            "username",
+            "avatar",
+            "created_at",
+            "streak_count",
+            "first_name",
+            "last_name",
+            "last_practice_date",
+            "is_vip",
+          ], // hoặc các field user của bạn
         },
       ],
     });
@@ -97,6 +106,13 @@ class UserProgressController extends BaseController {
       userId: r.user_id,
       username: r.User.username,
       avatar: r.User.avatar,
+      createdAt: r.User.created_at,
+      streakCount: r.User.streak_count,
+      firstName: r.User.first_name,
+      lastName: r.User.last_name,
+      lastPracticeDate: r.User.last_practice_date,
+      isVip: r.User.is_vip,
+
       totalXp: r.get("total_xp"),
     }));
   };
