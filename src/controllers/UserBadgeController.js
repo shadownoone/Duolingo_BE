@@ -89,6 +89,37 @@ class UserBadgeController extends BaseController {
       });
     }
   };
+
+  getUsserBadges = async (req, res) => {
+    const userId = req.user.user_id;
+    try {
+      // Lấy tất cả UserBadge của user này, kèm theo thông tin Badge
+      const userBadges = await db.UserBadge.findAll({
+        where: { user_id: userId },
+        include: [
+          {
+            model: db.Badge,
+            attributes: ["badge_id", "badge_name", "xp_threshold", "icon_url"],
+          },
+        ],
+        order: [[db.Badge, "xp_threshold", "ASC"]],
+      });
+
+      // Chỉ trả về mảng các badge mà thôi
+      const badges = userBadges.map((ub) => ub.Badge);
+
+      return res.status(200).json({
+        code: 0,
+        data: badges,
+      });
+    } catch (err) {
+      console.error("getUserBadges error:", err);
+      return res.status(500).json({
+        code: 1,
+        message: "Lỗi server khi lấy huy hiệu của user",
+      });
+    }
+  };
 }
 
 module.exports = new UserBadgeController();

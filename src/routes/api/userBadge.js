@@ -8,4 +8,6 @@ router.get("/all", UserBadgeController.get);
 
 router.post("/assign", authenticateUser, UserBadgeController.assign);
 
+router.get("/userBadge", authenticateUser, UserBadgeController.getUsserBadges);
+
 module.exports = router;
