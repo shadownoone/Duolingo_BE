@@ -4,13 +4,7 @@ require("dotenv").config();
 const db = require("~/models");
 const passport = require("passport");
 const fileUpload = require("express-fileupload");
-const authRoute = require("./routes/api/auth");
-const cookieSession = require("cookie-session");
 const PayOS = require("@payos/node");
-const { User } = require("~/models");
-const { Op } = require("sequelize");
-const moment = require("moment");
-
 const payos = new PayOS(
   process.env.PAYOS_CLIENT_ID,
   process.env.PAYOS_SECRET_ID,
@@ -35,13 +29,11 @@ const { sequelize, connect } = require("./config/connection");
 const helpers = require("./helpers/handlebars");
 const socketService = require("./services/socketService");
 const { authenticateUser } = require("./middlewares/authMiddleware");
-const {
-  VNPay,
-  ignoreLogger,
-  ProductCode,
-  VnpLocale,
-  dateFormat,
-} = require("vnpay");
+
+const fs = require("fs");
+const speech = require("@google-cloud/speech");
+
+const client = new speech.SpeechClient();
 
 const generateOrderCode = () => {
   return Math.floor(Math.random() * 100000); // Số ngẫu nhiên nhỏ hơn 1 tỷ
@@ -68,6 +60,9 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+process.env.GOOGLE_APPLICATION_CREDENTIALS =
+  "my-project-datn-461008-b1af95868b2f.json";
 
 app.engine(
   "hbs",
@@ -123,6 +118,83 @@ app.use((req, res, next) => {
 
 routes(app);
 
+const TEMP_DIR = path.join(__dirname, "temp");
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
+
+app.post("/api/v1/assess-speech", async (req, res) => {
+  try {
+    // 1. Kiểm tra upload
+    if (!req.files?.audio) {
+      return res.status(400).json({ error: "No audio file uploaded" });
+    }
+    const audioFile = req.files.audio;
+    const expectedText = req.body.expectedText;
+    if (!expectedText) {
+      return res.status(400).json({ error: "expectedText is required" });
+    }
+    if (!audioFile.mimetype.startsWith("audio/")) {
+      return res.status(400).json({ error: "File must be an audio file" });
+    }
+
+    // 2. Lưu file tạm
+    const tempName = `audio_${Date.now()}.webm`;
+    const tempPath = path.join(TEMP_DIR, tempName);
+    await audioFile.mv(tempPath);
+
+    // 3. Đọc file và encode base64
+    const audioBytes = fs.readFileSync(tempPath).toString("base64");
+
+    // 4. Gọi Google Speech-to-Text
+    const [response] = await client.recognize({
+      audio: { content: audioBytes },
+      config: {
+        encoding: "WEBM_OPUS",
+        languageCode: "en-US",
+        enableAutomaticPunctuation: true,
+        model: "latest_long",
+      },
+    });
+
+    // Xóa file tạm
+    fs.unlinkSync(tempPath);
+
+    // 5. Lấy transcript (chuỗi)
+    const alt = response.results?.[0]?.alternatives?.[0] || {};
+    const transcript = alt.transcript?.trim() || "";
+
+    // 6. So sánh full-string
+    const clean = (str) =>
+      str
+        .toLowerCase()
+        .replace(/[^a-z]/g, "")
+        .trim();
+    const joinedTranscript = clean(transcript);
+    const joinedExpected = clean(expectedText);
+
+    // Đúng nếu transcript đúng hẳn, hoặc chứa expected làm substring
+    const isCorrect =
+      joinedTranscript === joinedExpected ||
+      joinedTranscript.includes(joinedExpected);
+    const accuracy = isCorrect ? 1 : 0;
+
+    // 7. Trả về kết quả
+    res.json({
+      transcript,
+      overallConfidence: alt.confidence ?? 0,
+      accuracy,
+      isCorrect,
+    });
+  } catch (err) {
+    console.error("Speech-to-text error:", err);
+    res.status(500).json({
+      error: "Speech-to-text error",
+      details: err.message,
+    });
+  }
+});
+
 const YOUR_DOMAIN = "http://localhost:5173";
 
 app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
@@ -156,11 +228,6 @@ app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
   }
 });
 
-app.get("/receive-hook", (req, res) => {
-  return res.sendStatus(200);
-});
-
-// Thực sự xử lý POST
 app.post("/receive-hook", async (req, res) => {
   try {
     console.log("vao roi");
