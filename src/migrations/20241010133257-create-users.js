@@ -31,6 +31,45 @@ module.exports = {
         type: Sequelize.STRING(50),
         allowNull: true,
       },
+      avatar: {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+        defaultValue: null,
+      },
+      phone: {
+        type: Sequelize.STRING(20),
+        allowNull: true,
+        defaultValue: null,
+      },
+      last_practice_date: {
+        type: Sequelize.DATEONLY,
+        allowNull: true,
+      },
+      streak_count: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      hearts_count: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 5,
+      },
+      lingots: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 100,
+      },
+      role: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      is_vip: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -39,9 +78,6 @@ module.exports = {
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal(
-          "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-        ),
       },
     });
   },
