@@ -26,7 +26,7 @@ class AuthController {
         res.cookie("accessToken", user.accessToken, {
           httpOnly: true,
           secure: true,
-          sameSite: "Strict",
+          sameSite: "None",
 
           maxAge: 15 * 60 * 1000,
         });
@@ -35,7 +35,7 @@ class AuthController {
         res.cookie("refreshToken", user.refreshToken, {
           httpOnly: true,
           secure: true,
-          sameSite: "Strict",
+          sameSite: "None",
           maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
