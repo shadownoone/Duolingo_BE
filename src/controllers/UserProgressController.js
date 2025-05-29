@@ -76,18 +76,32 @@ class UserProgressController extends BaseController {
     }
   };
 
-  getLeaderboard = async () => {
-    // Lấy tổng xp của mỗi user (chỉ tính những lesson đã hoàn thành)
+  getLeaderboard = async (limit = 10) => {
     const rows = await db.UserProgress.findAll({
       where: { status: "completed" },
-      attributes: ["user_id", [fn("SUM", col("xp")), "total_xp"]],
-      group: ["user_id"],
+      attributes: [
+        [col("UserProgress.user_id"), "user_id"],
+        [fn("SUM", col("UserProgress.xp")), "total_xp"],
+      ],
+      group: [
+        col("UserProgress.user_id"),
+        col("User.user_id"),
+        col("User.username"),
+        col("User.avatar"),
+        col("User.created_at"),
+        col("User.streak_count"),
+        col("User.first_name"),
+        col("User.last_name"),
+        col("User.last_practice_date"),
+        col("User.is_vip"),
+      ],
       order: [[literal("total_xp"), "DESC"]],
-
+      limit: limit,
       include: [
         {
           model: db.User,
           attributes: [
+            "user_id",
             "username",
             "avatar",
             "created_at",
@@ -96,14 +110,13 @@ class UserProgressController extends BaseController {
             "last_name",
             "last_practice_date",
             "is_vip",
-          ], // hoặc các field user của bạn
+          ],
         },
       ],
     });
 
-    // format lại cho dễ dùng
     return rows.map((r) => ({
-      userId: r.user_id,
+      userId: r.get("user_id"),
       username: r.User.username,
       avatar: r.User.avatar,
       createdAt: r.User.created_at,
@@ -112,7 +125,6 @@ class UserProgressController extends BaseController {
       lastName: r.User.last_name,
       lastPracticeDate: r.User.last_practice_date,
       isVip: r.User.is_vip,
-
       totalXp: r.get("total_xp"),
     }));
   };
