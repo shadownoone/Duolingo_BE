@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("UserProgresses", {
+    await queryInterface.createTable("UserProgress", {
       progress_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
