@@ -264,8 +264,15 @@ class UserController extends BaseController {
 
       // Lấy danh sách người dùng
       const users = await db.User.findAll({
-        attributes: ["user_id", "username", "email", "created_at"], // Chọn các trường cần thiết
-        limit: 10, // Có thể tùy chỉnh số lượng bản ghi trả về
+        attributes: [
+          "user_id",
+          "username",
+          "email",
+          "created_at",
+          "avatar",
+          "is_vip",
+        ], // Chọn các trường cần thiết
+        limit: 50, // Có thể tùy chỉnh số lượng bản ghi trả về
         offset: 0, // Có thể tùy chỉnh để phân trang
       });
 

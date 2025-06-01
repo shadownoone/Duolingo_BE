@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: "language_id",
         as: "languages",
       });
+      User.hasMany(models.Payment, {
+        foreignKey: "user_id",
+        as: "payments",
+      });
     }
   }
 
@@ -87,10 +91,10 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "User",
-      tableName: "Users", // Để khớp với tên bảng trong DB
-      timestamps: true, // Nếu bạn muốn dùng createdAt, updatedAt
-      createdAt: "created_at", // báo cho Sequelize biết cột DB tên là created_at
-      updatedAt: "updated_at", // báo cho Sequelize biết cột DB tên là updated_at
+      tableName: "Users",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
     }
   );
 

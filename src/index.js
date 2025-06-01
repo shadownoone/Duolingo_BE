@@ -224,31 +224,55 @@ app.post("/api/v1/payment-link", authenticateUser, async (req, res) => {
   }
 });
 
+app.get("/receive-hook", (req, res) => {
+  console.log("GET /receive-hook – PayOS đang verify URL");
+  return res.sendStatus(200);
+});
+
 app.post("/receive-hook", async (req, res) => {
   try {
-    console.log("vao roi");
+    console.log(
+      "POST /receive-hook – Payload:",
+      JSON.stringify(req.body, null, 2)
+    );
 
-    console.log("Webhook received:", req.body);
+    // Nếu payload không có `data` hoặc `data.orderCode`, trả 200 để PayOS confirm thử.
+    if (!req.body.data || !req.body.data.orderCode) {
+      console.log(
+        "Chỉ payload verify (hoặc dữ liệu không chứa orderCode), trả 200 OK"
+      );
+      return res.sendStatus(200);
+    }
+
+    // Nếu có data.orderCode, tiếp tục xử lý.
     const { orderCode } = req.body.data;
     console.log("Order code:", orderCode);
 
-    if (!orderCode)
-      return res.status(400).json({ message: "Order code is missing" });
-
+    // Tìm payment trong DB
     const payment = await db.Payment.findOne({
       where: { order_code: orderCode },
     });
-    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
+    if (!payment) {
+      // Payment chưa có (có thể payload test), nhưng ta vẫn trả 200 để PayOS không mark FAIL.
+      console.log(
+        `Payment with order_code=${orderCode} not found. Chuyển qua next.`
+      );
+      return res.sendStatus(200);
+    }
+
+    // Nếu tìm thấy payment, cập nhật như bình thường
     await payment.update({ status: "success" });
     const user = await db.User.findOne({ where: { user_id: payment.user_id } });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    await user.update({ is_vip: 1 });
-    return res.status(200).json({ message: "User upgraded to VIP" });
+    if (user) {
+      await user.update({ is_vip: 1 });
+      console.log(`User ${user.user_id} đã được nâng is_vip = 1`);
+    }
+    return res.sendStatus(200);
   } catch (err) {
-    console.error(err);
-    return res.sendStatus(500);
+    console.error("Lỗi khi xử lý webhook:", err);
+    // Nếu có lỗi server, vẫn trả 200 để PayOS không lặp lại confirm (hoặc có thể tùy chọn trả 500 để PayOS retry)
+    return res.sendStatus(200);
   }
 });
 
