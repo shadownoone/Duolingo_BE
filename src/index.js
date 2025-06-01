@@ -246,11 +246,12 @@ app.post("/receive-hook", async (req, res) => {
 
     // Nếu có data.orderCode, tiếp tục xử lý.
     const { orderCode } = req.body.data;
+    const orderCodeString = String(orderCode);
     console.log("Order code:", orderCode);
 
     // Tìm payment trong DB
     const payment = await db.Payment.findOne({
-      where: { order_code: orderCode },
+      where: { order_code: orderCodeString },
     });
 
     if (!payment) {
